@@ -1,14 +1,24 @@
 {
+  "contacts": [
+    {
+      "id": "888",
+      "name": "ilyasss"
+    },
+    {
+      "id": "03e8",
+      "name": "tgtgtgtgtg"
+    }
+  ],
   "posts": [
     {
-      "id": 1,
+      "id": "1",
       "title": "json-server",
       "author": "typicode"
     }
   ],
   "comments": [
     {
-      "id": 1,
+      "id": "1",
       "body": "some comment",
       "postId": 1
     }

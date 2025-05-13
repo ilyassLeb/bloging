@@ -1,69 +1,80 @@
 <script setup>
 import { reactive } from "vue";
 import { useRouter } from "vue-router";
-//import db connection class.
-import dbConnection from "../assets/database/dbConnection";
 
 const routePush = useRouter();
 let allContactsData = reactive({ data: {} });
 let allGroupData = reactive({ data: {} });
 
-//define props
 const props = defineProps({
-   pageName: {
-      type: String,
-      required: true,
-   },
-   id: {
-      type: Number,
-   },
+  pageName: {
+    type: String,
+    required: true,
+  },
+  id: {
+    type: Number,
+  },
 });
-//get all group data fun
-(async function getAllGroup(id) {
-   try {
-      const result = await dbConnection.getAllGroup();
-      allGroupData.data = result.data;
-   } catch (error) {
-      console.log(error);
-   }
+
+const baseUrl = "http://localhost:9000";
+
+// get all group data
+(async function getAllGroup() {
+  try {
+    const res = await fetch(`${baseUrl}/groups`);
+    const data = await res.json();
+    allGroupData.data = data;
+  } catch (error) {
+    console.log(error);
+  }
 })();
 
-//checking component call for which class,if edit page call then run if condition.
-if (props.pageName == "editPage") {
-   //get single data for editing
-   (async function getSingleContactsForEdit(id) {
-      try {
-         const result = await dbConnection.getSingleContacts(id);
-         allContactsData.data = result.data;
-      } catch (error) {
-         console.log(error);
-      }
-   })(props.id);
+// if edit page: get contact by ID
+if (props.pageName === "editPage") {
+  (async function getSingleContactsForEdit() {
+    try {
+      const res = await fetch(`${baseUrl}/contacts/${props.id}`);
+      const data = await res.json();
+      allContactsData.data = data;
+    } catch (error) {
+      console.log(error);
+    }
+  })();
 }
 
-//add new contact func
+// Add new contact
 async function addNewContact(data) {
-   try {
-      const result = await dbConnection.addNewContact(data);
-      routePush.push("/");
-   } catch (error) {
-      console.log(error);
-   }
+  try {
+    await fetch(`${baseUrl}/contacts`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    routePush.push("/");
+  } catch (error) {
+    console.log(error);
+  }
 }
 
-//update edited data func,if this component call by edit page,then work it.
+// Update contact
 async function updateData(id) {
-   try {
-      const result = await dbConnection.updateContacts(
-         id,
-         allContactsData.data
-      );
-      routePush.push("/");
-   } catch (error) {
-      console.log(error);
-   }
+  if (!id) {
+    console.error("Aucun ID fourni pour la mise à jour !");
+    return;
+  }
+  try {
+    await fetch(`${baseUrl}/contacts/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(allContactsData.data),
+    });
+    routePush.push("/");
+  } catch (error) {
+    console.log(error);
+  }
 }
 </script>
+
 <template>
    <div class="container">
       <div class="row mb-3">
@@ -166,7 +177,9 @@ async function updateData(id) {
                   <!-- if this component call by edit page then this button will be show -->
                   <button
                      v-if="pageName == 'editPage'"
-                     @click.prevent="updateData(allContactsData.data.id)"
+               
+                     @click.prevent="updateData(props.id)"
+
                      type="submit"
                      class="btn btn-success float-end mt-3"
                   >
@@ -177,7 +190,8 @@ async function updateData(id) {
                      v-if="pageName == 'addPage'"
                      @click.prevent="addNewContact(allContactsData.data)"
                      type="submit"
-                     class="btn btn-success float-end mt-3"
+                     class="btn btn-warning float-end mt-3"
+
                   >
                      Save Contact
                   </button>

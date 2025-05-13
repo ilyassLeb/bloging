@@ -1,50 +1,78 @@
 <script setup>
-import { reactive, ref } from "vue";
-import { RouterLink } from "vue-router";
-//import db connection class.
-import dbConnection from "../assets/database/dbConnection.js";
+import { reactive, ref, onMounted } from "vue";
 
+// Déclaration des données réactives
 const allContactsData = reactive({ data: [] });
 const searchString = ref("");
 
-// get all contacts and if you searching any contact then run this func.
-async function getAllContacts(searchString) {
+// Fonction pour récupérer tous les contacts ou effectuer une recherche
+async function getAllContacts(searchString = "") {
+   console.log('searching', searchString);
    try {
-      const result = await dbConnection.getAllContacts(searchString);
-      allContactsData.data = result.data;
+      let url = 'http://localhost:9000/contacts'; // URL de base de l'API
+
+      // Si une chaîne de recherche est fournie, on ajoute le paramètre q à l'URL
+      if (searchString) {
+         url += `?q=${searchString}`;
+      }
+
+      const response = await fetch(url);
+      const result = await response.json();
+
+      // Filtrer côté client si la recherche a échoué ou n'est pas adéquate
+      if (searchString) {
+         allContactsData.data = result.filter(contact => contact.name.toLowerCase().includes(searchString.toLowerCase()));
+      } else {
+         allContactsData.data = result;
+      }
    } catch (error) {
       console.log(error);
    }
 }
-getAllContacts(searchString.value);
 
-//delete single contact func
+
+// Supprimer un contact
 async function deleteContacts(id) {
    try {
-      const result = await dbConnection.deleteContacts(id);
-      getAllContacts(searchString.value);
+      const result = await fetch(`http://localhost:9000/contacts/${id}`, {
+         method: 'DELETE'
+      });
+      if (result.ok) {
+         getAllContacts(searchString.value); // Rafraîchir après suppression
+      }
    } catch (error) {
       console.log(error);
    }
 }
+
+// Fonction appelée lors du clic sur le bouton de recherche
+function onSearch() {
+   getAllContacts(searchString.value);
+}
+
+// Initialiser avec tous les contacts au montage
+onMounted(() => {
+   getAllContacts(); // Appel initial pour charger tous les contacts
+});
 </script>
+
+
 <template>
    <div class="container">
       <div class="row mb-3">
          <div class="col d-flex justify-content-center">
             <nav class="navbar bg-transparent">
                <div class="container-fluid">
-                  <form class="d-flex bg-transparent" role="search">
-                     <!-- search here any contact -->
+                  <form @submit.prevent="onSearch" class="d-flex bg-transparent" role="search">
+                     <!-- Rechercher un contact -->
                      <input
-                        @input="getAllContacts(searchString)"
                         v-model="searchString"
                         class="form-control border-success me-2 bg-transparent"
                         type="search"
-                        placeholder="Search"
+                        placeholder="Search by name"
                         aria-label="Search"
                      />
-                     <button @click.prevent class="btn btn-outline-success" type="submit">
+                     <button class="btn btn-outline-success" type="submit">
                         Search
                      </button>
                   </form>

@@ -2,7 +2,6 @@
 import { reactive } from "vue";
 import { useRoute, useRouter } from "vue-router";
 //import db connection class.
-import dbConnection from "../assets/database/dbConnection.js";
 
 const routeBack = useRouter();
 const id = useRoute().params.id;
