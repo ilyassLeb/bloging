@@ -1,27 +1,24 @@
 <script setup>
 import { reactive, ref, onMounted } from "vue";
 
-// Déclaration des données réactives
 const allContactsData = reactive({ data: [] });
 const searchString = ref("");
 
-// Fonction pour récupérer tous les contacts ou effectuer une recherche
-async function getAllContacts(searchString = "") {
-   console.log('searching', searchString);
+// Récupérer tous les contacts
+async function getAllContacts(search = "") {
    try {
-      let url = 'http://localhost:9000/contacts'; // URL de base de l'API
-
-      // Si une chaîne de recherche est fournie, on ajoute le paramètre q à l'URL
-      if (searchString) {
-         url += `?q=${searchString}`;
+      let url = 'http://localhost:9000/contacts';
+      if (search) {
+         url += `?q=${search}`;
       }
 
       const response = await fetch(url);
       const result = await response.json();
 
-      // Filtrer côté client si la recherche a échoué ou n'est pas adéquate
-      if (searchString) {
-         allContactsData.data = result.filter(contact => contact.name.toLowerCase().includes(searchString.toLowerCase()));
+      if (search) {
+         allContactsData.data = result.filter(contact =>
+            contact.name.toLowerCase().includes(search.toLowerCase())
+         );
       } else {
          allContactsData.data = result;
       }
@@ -30,29 +27,28 @@ async function getAllContacts(searchString = "") {
    }
 }
 
-
-// Supprimer un contact
 async function deleteContacts(id) {
+   const confirmed = window.confirm("Êtes-vous sûr de vouloir supprimer ce contact ?");
+   if (!confirmed) return;
+
    try {
       const result = await fetch(`http://localhost:9000/contacts/${id}`, {
          method: 'DELETE'
       });
       if (result.ok) {
-         getAllContacts(searchString.value); // Rafraîchir après suppression
+         getAllContacts(searchString.value);
       }
    } catch (error) {
       console.log(error);
    }
 }
 
-// Fonction appelée lors du clic sur le bouton de recherche
 function onSearch() {
    getAllContacts(searchString.value);
 }
 
-// Initialiser avec tous les contacts au montage
 onMounted(() => {
-   getAllContacts(); // Appel initial pour charger tous les contacts
+   getAllContacts();
 });
 </script>
 
@@ -64,7 +60,6 @@ onMounted(() => {
             <nav class="navbar bg-transparent">
                <div class="container-fluid">
                   <form @submit.prevent="onSearch" class="d-flex bg-transparent" role="search">
-                     <!-- Rechercher un contact -->
                      <input
                         v-model="searchString"
                         class="form-control border-success me-2 bg-transparent"
@@ -72,27 +67,28 @@ onMounted(() => {
                         placeholder="Search by name"
                         aria-label="Search"
                      />
-                     <button class="btn btn-outline-success" type="submit">
-                        Search
-                     </button>
+                     <button class="btn btn-outline-success" type="submit">Search</button>
                   </form>
                </div>
             </nav>
          </div>
          <hr class="mt-3" />
       </div>
-      <div class="row justify-content-center">
+
+      <!-- Afficher un message si la liste est vide -->
+      <div v-if="allContactsData.data.length === 0" class="text-center text-muted mt-4">
+         Aucun contact trouvé.
+      </div>
+
+      <!-- Afficher la liste des contacts -->
+      <div v-else class="row justify-content-center">
          <div
             v-for="data in allContactsData.data"
             :key="data.id"
             class="col-5 m-1 p-2 d-flex bg-success bg-opacity-25 rounded-3"
          >
             <div class="col-3 rounded-circle m-auto w-auto">
-               <img
-                  :src="data.photo"
-                  class="img-fluid rounded-circle img-height"
-                  alt="..."
-               />
+               <img :src="data.photo" class="img-fluid rounded-circle img-height" alt="..." />
             </div>
             <div class="col-6 m-auto">
                <div class="d-flex flex-column">
@@ -111,20 +107,13 @@ onMounted(() => {
                </div>
             </div>
             <div class="col-1 d-flex flex-column m-auto">
-               <router-link
-                  :to="`/View/${data.id}`"
-                  class="btn btn-sm btn-success my-1"
-                  ><i class="bi bi-eye"></i
-               ></router-link>
-               <router-link
-                  :to="`/Edit/${data.id}`"
-                  class="btn btn-sm btn-warning my-1"
-                  ><i class="bi bi-pen"></i
-               ></router-link>
-               <button
-                  @click="deleteContacts(data.id)"
-                  class="btn btn-sm btn-danger my-1"
-               >
+               <router-link :to="`/View/${data.id}`" class="btn btn-sm btn-success my-1">
+                  <i class="bi bi-eye"></i>
+               </router-link>
+               <router-link :to="`/Edit/${data.id}`" class="btn btn-sm btn-warning my-1">
+                  <i class="bi bi-pen"></i>
+               </router-link>
+               <button @click="deleteContacts(data.id)" class="btn btn-sm btn-danger my-1">
                   <i class="bi bi-trash3"></i>
                </button>
             </div>
